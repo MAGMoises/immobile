@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 
+from django.db.models import Q
+
 from myapp.forms import ClientForm, ImmobileForm, RegistrarLocationForm # type: ignore
 from .models import Immobile, ImmobileImage
 # Create your views here.
@@ -53,3 +55,32 @@ def form_location(request, id):
             return redirect('list-location') # retorna para lista de imoveis
     context = {'form': form, 'location': get_locate}
     return render(request, 'form-location.html', context)
+
+## Relatório
+
+def reports(request): ## Relatórios   
+    immobile = Immobile.objects.all()
+
+    get_client = request.GET.get('client')
+    get_locate = request.GET.get('is_locate')
+    get_tipo_item = request.GET.get('tipo_item')
+
+    get_dt_start = request.GET.get('dt_start')
+    get_dt_end = request.GET.get('dt_end')
+    print(get_dt_start, get_dt_end)
+
+    if get_client: ## Filtra por nome e email do cliente
+        immobile = Immobile.objects.filter(
+					Q(reg_location__client__nome__icontains=get_client) | 
+					Q(reg_location__client__email__icontains=get_client))
+        
+    if get_dt_start and get_dt_end: ## Filtra por data
+        immobile = Immobile.objects.filter(reg_location__create_at__range=[get_dt_start,get_dt_end])
+
+    if get_locate:
+        immobile = Immobile.objects.filter(is_locate=get_locate)
+   
+    if get_tipo_item:
+        immobile = Immobile.objects.filter(tipo_item=get_tipo_item)
+
+    return render(request, 'reports.html', {'immobiles':immobile})
